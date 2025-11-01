@@ -17,8 +17,8 @@ export const createProduct = async (req, res) => {
       ventes,
     } = req.body;
 
-    // 📸 Upload de l'image sur Cloudinary
-    const imageResult = req.file ? req.file.path : null;
+    // ✅ Pas besoin de refaire un upload
+    const imageUrl = req.file?.path || req.file?.url || null;
 
     const product = await Product.create({
       id,
@@ -28,7 +28,7 @@ export const createProduct = async (req, res) => {
       promoPrix,
       categorie,
       date,
-      image: imageResult,
+      image: imageUrl,
       description,
       sku,
       ventes,
@@ -48,6 +48,7 @@ export const createProduct = async (req, res) => {
   }
 };
 
+
 // 📋 Obtenir tous les produits
 export const getProducts = async (req, res) => {
   try {
@@ -57,3 +58,74 @@ export const getProducts = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// 📦 Mettre à jour un produit
+export const updateProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    const product = await Product.findOneAndUpdate(
+      { id: id },
+      updateData,
+      { new: true }
+    );
+
+    if (!product) {
+      return res.status(404).json({ message: "Produit non trouvé ❌" });
+    }
+
+    res.status(200).json({
+      message: "✅ Produit mis à jour avec succès",
+      product,
+    });
+  } catch (error) {
+    console.error("Erreur:", error);
+    res.status(500).json({ message: "Erreur de mise à jour du produit", error });
+  }
+};
+
+// 🔹 Supprimer un produit
+export const deleteProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Vérifie si le produit existe
+    const product = await Product.findById(id);
+    if (!product) {
+      return res.status(404).json({ message: "❌ Produit introuvable" });
+    }
+
+    // Supprime l'image de Cloudinary si elle existe
+    if (product.image) {
+      const publicId = product.image.split("/").pop().split(".")[0];
+      try {
+        await cloudinary.uploader.destroy(`Products/${publicId}`);
+      } catch (error) {
+        console.warn("⚠️ Erreur suppression image Cloudinary :", error.message);
+      }
+    }
+
+    // Supprime le produit de la base de données
+    await Product.findByIdAndDelete(id);
+
+    res.status(200).json({ message: "✅ Produit supprimé avec succès" });
+  } catch (error) {
+    console.error("Erreur suppression produit :", error);
+    res.status(500).json({ message: "❌ Erreur serveur", error: error.message });
+  }
+};
+
+export const getProductById = async (req, res) => {
+  try {
+    const product = await Product.findOne({ id: req.params.id });
+    if (!product) {
+      return res.status(404).json({ message: "Produit non trouvé ❌" });
+    }
+    res.status(200).json(product);
+  } catch (error) {
+    res.status(500).json({ message: "Erreur lors du chargement du produit ❌" });
+  }
+};
+
+

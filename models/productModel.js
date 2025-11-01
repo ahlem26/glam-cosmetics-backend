@@ -9,7 +9,7 @@ const productSchema = new mongoose.Schema(
     promoPrix: { type: Number, default: null },
     categorie: { type: String, required: true },
     date: { type: Date, default: Date.now },
-    image: { type: String, required: true },
+    image: { type: String },
     description: { type: String, required: true },
     sku: { type: String, required: true, unique: true }, // référence produit
     ventes: { type: Number, default: 0 }, // nombre de ventes
